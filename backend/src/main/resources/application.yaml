@@ -1,7 +1,12 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
 spring:
   datasource:
     # Se la variabile d'ambiente non esiste, usa localhost:3307 (utile per i test locali da IDE)
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/calendar_db?useSSL=false&serverTimezone=UTC}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/calendar_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${SPRING_DATASOURCE_USERNAME:calendar_user}
     password: ${SPRING_DATASOURCE_PASSWORD:calendar_password}
   jpa:

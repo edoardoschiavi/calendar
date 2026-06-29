@@ -1,4 +1,4 @@
-package com.tenis.calendar;
+package com.tennis.calendar;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

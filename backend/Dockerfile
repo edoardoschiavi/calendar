@@ -3,13 +3,13 @@ FROM maven:3.8.5-openjdk-17 AS build
 WORKDIR /app
 # Copia il file pom.xml e scarica le dipendenze (ottimizza la cache di Docker)
 COPY pom.xml .
-RUN mnv dependency:go-offline
+RUN mvn dependency:go-offline
 # Copia il codice sorgente e compila il file .jar (saltando i test per velocizzare)
 COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Fase 2: Creazione dell'immagine finale leggera per l'esecuzione
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 # Copia il file .jar generato nella fase precedente
 COPY --from=build /app/target/*.jar app.jar
