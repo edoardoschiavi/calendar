@@ -13,3 +13,15 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: la_tua_email@gmail.com # <-- Il tuo indirizzo Gmail reale
+    password: ${GMAIL_APP_PASSWORD}   # <-- La "Password per l'App" generata da Google
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true

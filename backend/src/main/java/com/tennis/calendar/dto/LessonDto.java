@@ -9,9 +9,10 @@ import java.util.List;
 @Data
 public class LessonDto {
 
-    private Date day;
-    private String hour;
+    private Long id;
+    private Date startTime;
+    private Date endTime;
     private String status;
-    private List<User> users;
+    private List<UserDto> users;
 
 }

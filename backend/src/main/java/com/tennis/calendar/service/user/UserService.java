@@ -31,6 +31,7 @@ public class UserService implements IUserService {
                     user.setLastName(req.getLastName());
                     user.setEmail(req.getEmail());
                     user.setCellNumber(req.getCellNumber());
+                    user.setFitpCard(req.getFitpCard());
                     return userRepository.save(user);
                 })
                 .orElseThrow(() -> new EntityExistsException("User " + request.getEmail() + " already exists!"));
@@ -43,6 +44,7 @@ public class UserService implements IUserService {
                 .map(existingUser -> {
                     existingUser.setFirstName(request.getFirstName());
                     existingUser.setLastName(request.getLastName());
+                    existingUser.setFitpCard(request.getFitpCard());
                     return  userRepository.save(existingUser);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("User not found!"));

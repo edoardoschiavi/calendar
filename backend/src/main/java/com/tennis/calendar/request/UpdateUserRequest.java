@@ -8,5 +8,6 @@ public class UpdateUserRequest {
     private String firstName;
     private String lastName;
     private String cellNumber;
+    private String fitpCard;
 
 }

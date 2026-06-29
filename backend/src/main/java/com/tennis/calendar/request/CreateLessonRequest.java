@@ -10,8 +10,8 @@ import java.util.List;
 @Data
 public class CreateLessonRequest {
 
-    private Date day;
-    private String hour;
+    private Date startDate;
+    private Date endDate;
     private LessonStatus status = LessonStatus.DRAFT;
     private List<User> users;
 

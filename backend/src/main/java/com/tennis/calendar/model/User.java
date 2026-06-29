@@ -23,7 +23,7 @@ public class User {
     @NaturalId
     private String email;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = CascadeType.MERGE)
     @JoinTable(
             name = "user_lesson",
             joinColumns = @JoinColumn(name = "user_id"),

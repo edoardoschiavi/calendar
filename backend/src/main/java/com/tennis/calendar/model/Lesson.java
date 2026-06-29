@@ -25,4 +25,14 @@ public class Lesson {
     @ManyToMany(mappedBy = "userLessons")
     private List<User> users = new ArrayList<>();
 
+    public record LessonCreatedEvent(Lesson lesson){};
+
+    public void addUser(User user) {
+        if (this.users == null) {
+            this.users = new ArrayList<>();
+        }
+        this.users.add(user);
+        user.getUserLessons().add(this);
+    }
+
 }

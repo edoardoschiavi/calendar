@@ -1,31 +1,80 @@
 package com.tennis.calendar.service.lesson;
 
+import com.tennis.calendar.dto.LessonDto;
+import com.tennis.calendar.enums.LessonStatus;
 import com.tennis.calendar.model.Lesson;
+import com.tennis.calendar.model.User;
 import com.tennis.calendar.repository.LessonRepository;
+import com.tennis.calendar.repository.UserRepository;
 import com.tennis.calendar.request.CreateLessonRequest;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class LessonService implements ILessonService{
 
     private final LessonRepository lessonRepository;
+    private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public Lesson createLesson(CreateLessonRequest request) {
-        return null;
+        return Optional.of(request)
+                .map(req -> {
+                    Lesson lesson = new Lesson();
+                    lesson.setStartTime(request.getStartDate());
+                    lesson.setEndTime(request.getEndDate());
+                    lesson.setStatus(request.getStatus());
+                    saveUsersReferences(lesson, req);
+                    Lesson savedLesson = lessonRepository.save(lesson);
+                    eventPublisher.publishEvent(new Lesson.LessonCreatedEvent(savedLesson));
+                    return savedLesson;
+                })
+                .orElseThrow(() -> new EntityExistsException("Generic error!"));
+    }
+
+    private void saveUsersReferences(Lesson lesson, CreateLessonRequest req) {
+        req.getUsers().forEach( user -> {
+            User existingUser = userRepository.findById(user.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + user.getId()));
+            lesson.addUser(existingUser);
+        });
     }
 
     @Override
     public void confirmLesson(Long lessonId) {
-
+        lessonRepository.findById(lessonId)
+            .map(existingLesson -> {
+                existingLesson.setStatus(LessonStatus.CONFIRMED);
+                return lessonRepository.save(existingLesson);
+            })
+            .orElseThrow(() -> new EntityNotFoundException("Lesson not found with id: " + lessonId));
     }
 
     @Override
     public void deleteLesson(Long lessonId) {
 
+    }
+
+    @Override
+    public Lesson getLessonById(Long lessonId) {
+        return lessonRepository
+                .findById(lessonId)
+                .orElseThrow(() -> new EntityNotFoundException("Lesson not found!"));
+    }
+
+    @Override
+    public LessonDto convertLessonToDto(Lesson lesson) {
+        return modelMapper.map(lesson, LessonDto.class);
     }
 }
