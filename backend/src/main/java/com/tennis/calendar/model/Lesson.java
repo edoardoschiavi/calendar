@@ -16,8 +16,8 @@ public class Lesson {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Date day;
-    private String hour;
+    private Date startTime;
+    private Date endTime;
 
     @Enumerated(EnumType.STRING)
     private LessonStatus status;

@@ -1,8 +1,0 @@
-services:
-  db:
-    image: postgres:latest
-    volumes:
-      - db-vol:/var/lib/postgresql/data:rw
-      - ./db:/docker-entrypoint-initdb.d:ro
-    environment:
-
