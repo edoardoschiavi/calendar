@@ -35,12 +35,18 @@ public class LessonService implements ILessonService{
                     lesson.setStartTime(request.getStartDate());
                     lesson.setEndTime(request.getEndDate());
                     lesson.setStatus(request.getStatus());
+                    validateRequest(request, lesson);
                     saveUsersReferences(lesson, req);
                     Lesson savedLesson = lessonRepository.save(lesson);
                     eventPublisher.publishEvent(new Lesson.LessonCreatedEvent(savedLesson));
                     return savedLesson;
                 })
                 .orElseThrow(() -> new EntityExistsException("Generic error!"));
+    }
+
+    private void validateRequest(CreateLessonRequest request, Lesson lesson) {
+        if(lessonRepository.existsOverlappingLesson(lesson.getStartTime(), lesson.getEndTime()))
+            throw new EntityExistsException("There is already lesson in that date at that time!");
     }
 
     private void saveUsersReferences(Lesson lesson, CreateLessonRequest req) {
@@ -55,8 +61,13 @@ public class LessonService implements ILessonService{
     public void confirmLesson(Long lessonId) {
         lessonRepository.findById(lessonId)
             .map(existingLesson -> {
-                existingLesson.setStatus(LessonStatus.CONFIRMED);
-                return lessonRepository.save(existingLesson);
+                if(LessonStatus.DRAFT.equals(existingLesson.getStatus())) {
+                    existingLesson.setStatus(LessonStatus.CONFIRMED);
+                    return lessonRepository.save(existingLesson);
+                }
+                else {
+                   throw new EntityNotFoundException("No lesson in draft status for this id: " + lessonId);
+                }
             })
             .orElseThrow(() -> new EntityNotFoundException("Lesson not found with id: " + lessonId));
     }
