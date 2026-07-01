@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, X, Check, Trash2, ChevronLeft, ChevronRight, Settings, Users, Clock, CircleDot } from "lucide-react";
+import { Plus, X, Check, Trash2, ChevronLeft, ChevronRight, Settings, Users, Clock, CircleDot, Menu } from "lucide-react";
 
 /* ============================================================
    CourtCalendar — booking board for a tennis instructor
@@ -29,6 +29,20 @@ function useFonts() {
 }
 
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL;
+const MOBILE_BREAKPOINT = 760;
+
+function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < breakpoint);
+  useEffect(() => {
+    function onResize() {
+      setIsMobile(window.innerWidth < breakpoint);
+    }
+    window.addEventListener("resize", onResize);
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 /* ---------------- date helpers ---------------- */
 const DAY_MS = 86400000;
@@ -67,11 +81,22 @@ const HOURS = Array.from({ length: 15 }, (_, i) => 8 + i); // 08:00 - 22:00
 export default function CourtCalendar() {
   useFonts();
 
+  const isMobile = useIsMobile();
+
   const [apiBase, setApiBase] = useState(DEFAULT_API_BASE);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const [cursor, setCursor] = useState(() => new Date());
+  const weekStart = useMemo(() => startOfWeek(cursor), [cursor]);
+  const days = useMemo(() => {
+    if (isMobile) {
+      const d = new Date(cursor);
+      d.setHours(0, 0, 0, 0);
+      return [d];
+    }
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  }, [cursor, isMobile, weekStart]);
 
   const [lessons, setLessons] = useState([]);
   const [students, setStudents] = useState([]);
@@ -183,7 +208,20 @@ export default function CourtCalendar() {
     setShowCreate(true);
   }
 
-  const todayWeek = useMemo(() => isSameDay(weekStart, startOfWeek(new Date())), [weekStart]);
+  const todayWeek = useMemo(
+    () => (isMobile ? isSameDay(cursor, new Date()) : isSameDay(weekStart, startOfWeek(new Date()))),
+    [cursor, isMobile, weekStart]
+  );
+
+  function goPrev() {
+    setCursor((c) => addDays(c, isMobile ? -1 : -7));
+  }
+  function goNext() {
+    setCursor((c) => addDays(c, isMobile ? 1 : 7));
+  }
+  function goToday() {
+    setCursor(new Date());
+  }
 
   return (
     <div style={styles.app}>
@@ -588,7 +626,7 @@ function SettingsModal({ apiBase, onSave, onClose }) {
       >
         <div style={styles.formRow}>
           <label style={styles.label}>API base URL</label>
-          <input value={value} onChange={(e) => setValue(e.target.value)} style={styles.input} placeholder="http://localhost:8080" />
+          <input value={value} onChange={(e) => setValue(e.target.value)} style={styles.input} placeholder="***********" />
         </div>
         <div style={styles.modalActions}>
           <button type="submit" style={styles.primaryBtn}>Salva</button>
