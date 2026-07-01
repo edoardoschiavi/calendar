@@ -241,21 +241,29 @@ export default function CourtCalendar() {
           <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
             <h1 style={styles.title}>{fmtMonthYear(weekStart)}</h1>
             <span style={styles.weekRange}>
-              {days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – {days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short" })}
+              {isMobile 
+                ? days[0].toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })
+                : `${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short" })}`
+              }
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button style={styles.navBtn} onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Settimana precedente">
+            {/* Bottone Indietro */}
+            <button style={styles.navBtn} onClick={goPrev} aria-label="Precedente">
               <ChevronLeft size={18} />
             </button>
+            
+            {/* Bottone Oggi */}
             <button
               style={{ ...styles.todayBtn, opacity: todayWeek ? 0.5 : 1 }}
-              onClick={() => setWeekStart(startOfWeek(new Date()))}
+              onClick={goToday}
               disabled={todayWeek}
             >
               Oggi
             </button>
-            <button style={styles.navBtn} onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Settimana successiva">
+            
+            {/* Bottone Avanti */}
+            <button style={styles.navBtn} onClick={goNext} aria-label="Successivo">
               <ChevronRight size={18} />
             </button>
           </div>
@@ -901,6 +909,6 @@ const globalCss = `
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb { background: #DCD5C3; border-radius: 8px; }
   @media (max-width: 760px) {
-    div[style*="width: 240px"] { display: none; }
+    aside { display: none !important; }
   }
 `;
