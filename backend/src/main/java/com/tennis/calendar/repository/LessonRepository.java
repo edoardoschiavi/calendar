@@ -1,5 +1,6 @@
 package com.tennis.calendar.repository;
 
+import com.tennis.calendar.dto.LessonDto;
 import com.tennis.calendar.model.Lesson;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,4 +15,6 @@ public interface LessonRepository extends JpaRepository<Lesson, Long>  {
 
     @Query("SELECT COUNT(l) > 0 FROM Lesson l WHERE l.startTime < :end AND l.endTime > :start")
     boolean existsOverlappingLesson(@Param("start") Date start, @Param("end") Date end);
+
+    List<Lesson> findByStartTimeBetween(Date start, Date end);
 }

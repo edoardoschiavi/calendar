@@ -17,4 +17,6 @@ public interface IUserService {
     List<UserDto> getConvertedUsers(List<User> users);
 
     UserDto convertUserToDto(User user);
+
+    List<UserDto> getUsers();
 }

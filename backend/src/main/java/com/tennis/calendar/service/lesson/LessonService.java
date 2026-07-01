@@ -15,7 +15,10 @@ import org.modelmapper.ModelMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -74,7 +77,8 @@ public class LessonService implements ILessonService{
 
     @Override
     public void deleteLesson(Long lessonId) {
-
+        if(lessonId != null)
+            lessonRepository.deleteById(lessonId);
     }
 
     @Override
@@ -87,5 +91,16 @@ public class LessonService implements ILessonService{
     @Override
     public LessonDto convertLessonToDto(Lesson lesson) {
         return modelMapper.map(lesson, LessonDto.class);
+    }
+
+    @Override
+    public List<LessonDto> getLessonsInPeriod(Date start, Date end) {
+        List<Lesson> lessons = lessonRepository.findByStartTimeBetween(start,end);
+        if(lessons.isEmpty())
+            throw new EntityNotFoundException("No lessons in this timeline!");
+
+        return lessons.stream()
+                .map(this::convertLessonToDto)
+                .collect(Collectors.toList());
     }
 }

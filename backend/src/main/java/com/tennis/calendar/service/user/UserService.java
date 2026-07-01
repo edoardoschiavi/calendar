@@ -76,4 +76,12 @@ public class UserService implements IUserService {
         return modelMapper.map(user, UserDto.class);
     }
 
+    @Override
+    public List<UserDto> getUsers() {
+        List<User> users = userRepository.findAll();
+        if(users.isEmpty())
+            throw new EntityNotFoundException("No users in the database!");
+        return users.stream().map(this::convertUserToDto).toList();
+    }
+
 }
