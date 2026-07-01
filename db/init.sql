@@ -54,7 +54,7 @@ ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- Inseriamo un lessono associato all'utente admin
 INSERT INTO `lesson` (`id`,`start_time`, `end_time`, `status`) 
-VALUES (1,'2026-07-01 10:00:00.000000', '2026-07-01 11:30:00.000000', 'APPROVED')
+VALUES (1,'2026-07-01 10:00:00.000000', '2026-07-01 11:30:00.000000', 'DRAFT')
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- Inseriamo un lessono associato all'utente admin
