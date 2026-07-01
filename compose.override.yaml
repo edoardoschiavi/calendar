@@ -1,0 +1,37 @@
+services:
+  # In locale spegniamo il load balancer o non mappiamo le porte per non andare in conflitto
+  lb:
+    ports: [] 
+
+  db:
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
+      - MY_MAIL=${MY_MAIL}
+
+  frontend:
+    image: node:20-alpine
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
