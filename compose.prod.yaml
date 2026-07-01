@@ -10,6 +10,24 @@ services:
   lb:
     ports:
       - "80:80"
+      - "443:443"
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Redirect HTTP → HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    environment:
+      - DUCKDNS_TOKEN=${DUCKDNS_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
 
   db:
     labels:
@@ -31,15 +49,17 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
       - MY_MAIL=${MY_MAIL}
+      - CORS_ALLOWED_ORIGINS=https://${DOMAIN}
     labels:
       - "autoheal=true"
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
       - "traefik.http.routers.backend.priority=100"
     healthcheck:
-      # nc -z controlla se la porta è aperta. Se è aperta, restituisce successo (0)
       test: ["CMD", "nc", "-z", "localhost", "8080"]
       interval: 20s
       timeout: 5s
@@ -50,10 +70,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    args:
+        - VITE_API_BASE_URL=https://${DOMAIN}/api/v1
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
       - "traefik.http.routers.frontend.priority=1"
       - "autoheal=true"
@@ -63,3 +87,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+volumes:
+  letsencrypt:
