@@ -2,17 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus, X, Check, Trash2, ChevronLeft, ChevronRight, Settings, Users, Clock, CircleDot, Menu, CalendarDays, Search } from "lucide-react";
 
 /* ============================================================
-   CourtCalendar — booking board for a tennis instructor
-   Palette
-     --clay     #C1543C  (terracotta, primary / confirmed)
-     --grass    #4F7942  (court green, secondary)
-     --chalk    #F7F4EC  (background)
-     --ink      #20261F  (text)
-     --line     #DCD5C3  (hairlines)
-     --gold     #C99A3C  (draft state)
-   Type: Fraunces (display) / Inter (UI) / JetBrains Mono (times)
-   Signature: lesson "scorecards" — dashed clay-edge for draft,
-   solid filled card for confirmed, with a ball-seam divider.
+   CourtCalendar — Pro Corporate Palette Style (Fluent UI UI)
+   Layout Backgrounds:
+     -- Sidebar & Topbar: #F3F3F3
+     -- Calendar Grid:    #FFFFFF
+     -- Borders/Lines:    #EDEBE9
    ============================================================ */
 
 const FONTS_LINK_ID = "court-calendar-fonts";
@@ -49,7 +43,7 @@ const DAY_MS = 86400000;
 function startOfWeek(d) {
   const date = new Date(d);
   const day = date.getDay();
-  const diff = (day === 0 ? -6 : 1) - day; // Monday start
+  const diff = (day === 0 ? -6 : 1) - day; // Lunedì come inizio settimana
   date.setDate(date.getDate() + diff);
   date.setHours(0, 0, 0, 0);
   return date;
@@ -144,7 +138,7 @@ export default function CourtCalendar() {
       const body = await res.json();
       setStudents(body.data || []);
     } catch (e) {
-      // silent — endpoint may not exist yet on the backend
+      // silent
     }
   }, [apiBase]);
 
@@ -175,7 +169,7 @@ export default function CourtCalendar() {
       setActiveLesson(null);
       fetchLessons();
     } catch {
-      pushToast("Eliminazione non riuscita — l'endpoint DELETE /lessons/{id}/delete esiste sul backend?", "error");
+      pushToast("Eliminazione non riuscita", "error");
     }
   }
 
@@ -227,39 +221,39 @@ export default function CourtCalendar() {
 
   return (
     <div style={styles.app}>
-      {/* Sidebar — visibile solo su desktop */}
-      {!isMobile && (
-        <Sidebar
-          onNew={() => { setCreateSlot(null); setShowCreate(true); }}
-          onStudents={() => setShowStudents(true)}
-          onSettings={() => setShowSettings(true)}
-          lessonsCount={lessons.length}
-          draftCount={lessons.filter((l) => l.status === "DRAFT").length}
-        />
-      )}
+      {/* Sidebar Responsive (Fissa su PC, Cassetto/Drawer a comparsa su Mobile) */}
+      <Sidebar
+        onNew={() => { setCreateSlot(null); setShowCreate(true); if (isMobile) setShowMenu(false); }}
+        onStudents={() => { setShowStudents(true); if (isMobile) setShowMenu(false); }}
+        onSettings={() => { setShowSettings(true); if (isMobile) setShowMenu(false); }}
+        lessonsCount={lessons.length}
+        draftCount={lessons.filter((l) => l.status === "DRAFT").length}
+        isMobile={isMobile}
+        showMenu={showMenu}
+        onClose={() => setShowMenu(false)}
+      />
 
       <main style={{ ...styles.main, ...(isMobile ? styles.mainMobile : {}) }}>
-        {/* Topbar */}
+        {/* Topbar (#F3F3F3) */}
         <header style={styles.topbar}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             {isMobile && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <CircleDot size={18} color="#C1543C" strokeWidth={2.5} />
-                <span style={{ ...styles.brandText, fontSize: 18 }}>Court</span>
-              </div>
+              <button style={styles.navBtn} onClick={() => setShowMenu(true)} aria-label="Apri menu">
+                <Menu size={18} />
+              </button>
             )}
+            <h1 style={styles.title}>{fmtMonthYear(weekStart)}</h1>
             {!isMobile && (
-              <>
-                <h1 style={styles.title}>{fmtMonthYear(weekStart)}</h1>
-                <span style={styles.weekRange}>
-                  {`${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short" })}`}
-                </span>
-              </>
+              <span style={styles.weekRange}>
+                {days.length >= 7 
+                  ? `${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short" })}`
+                  : days[0].toLocaleDateString("it-IT", { day: "numeric", month: "long" })
+                }
+              </span>
             )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {/* Toggle giorno/settimana su mobile */}
             {isMobile && (
               <button
                 style={{ ...styles.viewToggleBtn, ...(mobileView === "week" ? styles.viewToggleBtnActive : {}) }}
@@ -287,28 +281,30 @@ export default function CourtCalendar() {
           </div>
         </header>
 
-        {/* Data corrente su mobile (sotto la topbar) */}
-        {isMobile && (
-          <div style={styles.mobileDateBar}>
-            {isDayView
-              ? days[0].toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })
-              : `${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}`
-            }
+        {/* Area Contenuto Calendario (#FFFFFF) */}
+        <div style={styles.contentArea}>
+          {isMobile && (
+            <div style={styles.mobileDateBar}>
+              {isDayView
+                ? days[0].toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })
+                : `${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}`
+              }
+            </div>
+          )}
+
+          {error && <div style={styles.errorBanner}>{error}</div>}
+
+          <div style={styles.calendarWrap}>
+            <WeekGrid
+              days={days}
+              lessons={lessons}
+              loading={loading}
+              onSlotClick={openSlot}
+              onLessonClick={setActiveLesson}
+              onSwipeLeft={goNext}
+              onSwipeRight={goPrev}
+            />
           </div>
-        )}
-
-        {error && <div style={styles.errorBanner}>{error}</div>}
-
-        <div style={styles.calendarWrap}>
-          <WeekGrid
-            days={days}
-            lessons={lessons}
-            loading={loading}
-            onSlotClick={openSlot}
-            onLessonClick={setActiveLesson}
-            onSwipeLeft={goNext}
-            onSwipeRight={goPrev}
-          />
         </div>
       </main>
 
@@ -368,40 +364,66 @@ export default function CourtCalendar() {
 }
 
 /* ---------------- sidebar ---------------- */
-function Sidebar({ onNew, onStudents, onSettings, lessonsCount, draftCount }) {
+function Sidebar({ onNew, onStudents, onSettings, lessonsCount, draftCount, isMobile, showMenu, onClose }) {
+  const dynamicSidebarStyle = {
+    ...styles.sidebar,
+    ...(isMobile ? {
+      position: "fixed",
+      top: 0,
+      left: showMenu ? 0 : -240,
+      bottom: 0,
+      zIndex: 100,
+      boxShadow: showMenu ? "5px 0 25px rgba(0,0,0,0.15)" : "none",
+      transition: "left 0.25s ease-in-out",
+    } : {})
+  };
+
   return (
-    <aside style={styles.sidebar}>
-      <div style={styles.brand}>
-        <CircleDot size={22} color="#C1543C" strokeWidth={2.5} />
-        <span style={styles.brandText}>Court</span>
-      </div>
+    <>
+      {isMobile && showMenu && (
+        <div style={styles.sidebarOverlay} onClick={onClose} />
+      )}
 
-      <button style={styles.newBtn} onClick={onNew}>
-        <Plus size={18} /> Nuova lezione
-      </button>
-
-      <nav style={styles.navList}>
-        <button style={styles.navItem} onClick={onStudents}>
-          <Users size={17} /> Allievi
-        </button>
-        <button style={styles.navItem} onClick={onSettings}>
-          <Settings size={17} /> Impostazioni
-        </button>
-      </nav>
-
-      <div style={styles.statsBox}>
-        <div style={styles.statsLine}>
-          <span style={styles.dot("#4F7942")} /> {lessonsCount} lezioni questa settimana
+      <aside style={dynamicSidebarStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={styles.brand}>
+            <CircleDot size={22} color="#0078D4" strokeWidth={2.5} />
+            <span style={styles.brandText}>Court</span>
+          </div>
+          {isMobile && (
+            <button style={styles.closeBtn} onClick={onClose} aria-label="Chiudi menu">
+              <X size={18} />
+            </button>
+          )}
         </div>
-        <div style={styles.statsLine}>
-          <span style={styles.dot("#C99A3C")} /> {draftCount} in bozza
-        </div>
-      </div>
 
-      <div style={styles.sidebarFoot}>
-        Ogni bozza resta in attesa di conferma.<br />Tocca una lezione per gestirla.
-      </div>
-    </aside>
+        <button style={styles.newBtn} onClick={onNew}>
+          <Plus size={18} /> Nuova lezione
+        </button>
+
+        <nav style={styles.navList}>
+          <button style={styles.navItem} onClick={onStudents}>
+            <Users size={17} /> Allievi
+          </button>
+          <button style={styles.navItem} onClick={onSettings}>
+            <Settings size={17} /> Impostazioni
+          </button>
+        </nav>
+
+        <div style={styles.statsBox}>
+          <div style={styles.statsLine}>
+            <span style={styles.dot("#00A3A3")} /> {lessonsCount} lezioni questa settimana
+          </div>
+          <div style={styles.statsLine}>
+            <span style={styles.dot("#C99A3C")} /> {draftCount} in bozza
+          </div>
+        </div>
+
+        <div style={styles.sidebarFoot}>
+          Ogni bozza resta in attesa di conferma.<br />Tocca una lezione per gestirla.
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -446,7 +468,6 @@ function WeekGrid({ days, lessons, loading, onSlotClick, onLessonClick, onSwipeL
     if (!touchRef.current) return;
     const dx = e.changedTouches[0].clientX - touchRef.current.x;
     const dy = Math.abs(e.changedTouches[0].clientY - touchRef.current.y);
-    // Swipe orizzontale: almeno 50px, più orizzontale che verticale
     if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
       if (dx < 0) onSwipeLeft?.();
       else onSwipeRight?.();
@@ -513,9 +534,9 @@ function LessonBlock({ lesson, onClick }) {
         ...styles.lessonBlock,
         top,
         height,
-        background: isDraft ? "#FBF4E3" : "#3F6135",
-        border: isDraft ? "1.5px dashed #C99A3C" : "1.5px solid #2E4827",
-        color: isDraft ? "#6B4F18" : "#F7F4EC",
+        background: isDraft ? "#FFFDF0" : "#00A3A3",
+        border: isDraft ? "1.5px dashed #C99A3C" : "none",
+        color: isDraft ? "#605E5C" : "#ffffff",
       }}
     >
       <span style={styles.lessonBlockTime}>{fmtTime(lesson.startTime)}</span>
@@ -566,10 +587,7 @@ function CreateLessonModal({ students, initialSlot, onClose, onSubmit }) {
         <div style={styles.formRow}>
           <label style={styles.label}>Allievi</label>
           {students.length === 0 ? (
-            <p style={styles.hintText}>
-              Nessun allievo disponibile. Aggiungi un endpoint <code>GET /users</code> sul backend, oppure crea allievi
-              dal pannello "Allievi".
-            </p>
+            <p style={styles.hintText}>Nessun allievo disponibile.</p>
           ) : (
             <div style={styles.studentPicker}>
               {students.map((s) => {
@@ -612,13 +630,13 @@ function LessonDetailModal({ lesson, onClose, onConfirm, onDelete }) {
     <ModalShell onClose={onClose} title={isDraft ? "Lezione in bozza" : "Lezione confermata"} subtitle={lesson.startTime.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}>
       <div style={styles.detailBody}>
         <div style={styles.detailRow}>
-          <Clock size={16} color="#7A7264" />
+          <Clock size={16} color="#605E5C" />
           <span>
             {fmtTime(lesson.startTime)} – {fmtTime(lesson.endTime)}
           </span>
         </div>
         <div style={styles.detailRow}>
-          <Users size={16} color="#7A7264" />
+          <Users size={16} color="#605E5C" />
           <span>
             {(lesson.users || []).length
               ? lesson.users.map((u) => `${u.firstName} ${u.lastName}`).join(", ")
@@ -645,7 +663,7 @@ function LessonDetailModal({ lesson, onClose, onConfirm, onDelete }) {
 
 /* ---------------- students modal ---------------- */
 function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
-  const [tab, setTab] = useState("list"); // "list" | "add"
+  const [tab, setTab] = useState("list"); 
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", cellNumber: "", fitpCard: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -682,7 +700,6 @@ function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
 
   return (
     <ModalShell onClose={onClose} title="Allievi" subtitle={`${students.length} allievi registrati`}>
-      {/* Tab bar */}
       <div style={styles.tabBar}>
         <button
           style={{ ...styles.tabBtn, ...(tab === "list" ? styles.tabBtnActive : {}) }}
@@ -700,9 +717,8 @@ function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
 
       {tab === "list" && (
         <div style={{ padding: "0 22px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* Search box */}
           <div style={styles.searchBox}>
-            <Search size={15} color="#A39C8B" style={{ flexShrink: 0 }} />
+            <Search size={15} color="#605E5C" style={{ flexShrink: 0 }} />
             <input
               placeholder="Cerca per nome, cognome o email…"
               value={search}
@@ -711,12 +727,9 @@ function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
             />
           </div>
 
-          {/* Lista */}
           <div style={{ ...styles.studentList, maxHeight: 340 }}>
             {students.length === 0 && (
-              <p style={styles.hintText}>
-                Nessun allievo trovato. Aggiungine uno dalla tab "Nuovo allievo".
-              </p>
+              <p style={styles.hintText}>Nessun allievo trovato.</p>
             )}
             {filtered.length === 0 && students.length > 0 && (
               <p style={styles.hintText}>Nessun risultato per "{search}".</p>
@@ -728,11 +741,11 @@ function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{s.firstName} {s.lastName}</div>
-                  <div style={{ fontSize: 12, color: "#8A8473", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div style={{ fontSize: 12, color: "#605E5C", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {s.email}{s.cellNumber ? ` · ${s.cellNumber}` : ""}
                   </div>
                   {s.fitpCard && (
-                    <div style={{ fontSize: 11, color: "#A39C8B", marginTop: 1 }}>FITP {s.fitpCard}</div>
+                    <div style={{ fontSize: 11, color: "#605E5C", marginTop: 1 }}>FITP {s.fitpCard}</div>
                   )}
                 </div>
               </div>
@@ -828,7 +841,7 @@ function ModalShell({ title, subtitle, onClose, children }) {
 }
 
 /* ============================================================
-   styles
+   styles — Fluent Corporate Clean Style (#F3F3F3 / #FFFFFF)
    ============================================================ */
 const ROW_H = 56;
 
@@ -836,35 +849,41 @@ const styles = {
   app: {
     display: "flex",
     minHeight: "100vh",
-    background: "#F7F4EC",
-    color: "#20261F",
+    background: "#FFFFFF",
+    color: "#323130",
     fontFamily: "'Inter', system-ui, sans-serif",
   },
   sidebar: {
     width: 240,
     flexShrink: 0,
-    borderRight: "1px solid #DCD5C3",
+    borderRight: "1px solid #EDEBE9",
     padding: "24px 18px",
     display: "flex",
     flexDirection: "column",
     gap: 22,
+    background: "#F3F3F3", // Modificato come richiesto
+  },
+  sidebarOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.25)",
+    zIndex: 99,
   },
   brand: { display: "flex", alignItems: "center", gap: 8, padding: "0 4px" },
-  brandText: { fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em" },
+  brandText: { fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em", color: "#323130" },
   newBtn: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    background: "#C1543C",
-    color: "#F7F4EC",
+    background: "#0078D4",
+    color: "#ffffff",
     border: "none",
-    borderRadius: 10,
+    borderRadius: 6,
     padding: "11px 14px",
     fontWeight: 600,
     fontSize: 14.5,
     cursor: "pointer",
-    boxShadow: "0 2px 0 #9C4230",
   },
   navList: { display: "flex", flexDirection: "column", gap: 2 },
   navItem: {
@@ -873,85 +892,105 @@ const styles = {
     gap: 10,
     background: "transparent",
     border: "none",
-    color: "#3D4439",
+    color: "#323130",
     fontSize: 14.5,
     fontWeight: 500,
     padding: "9px 8px",
-    borderRadius: 8,
+    borderRadius: 6,
     cursor: "pointer",
     textAlign: "left",
   },
   statsBox: {
     marginTop: "auto",
-    background: "#FBF8F0",
-    border: "1px solid #DCD5C3",
-    borderRadius: 12,
-    padding: "14px 14px",
+    background: "#FFFFFF",
+    border: "1px solid #EDEBE9",
+    borderRadius: 8,
+    padding: "14px",
     display: "flex",
     flexDirection: "column",
     gap: 8,
   },
-  statsLine: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#4A4438" },
+  statsLine: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#605E5C" },
   dot: (color) => ({ width: 8, height: 8, borderRadius: 999, background: color, display: "inline-block", flexShrink: 0 }),
-  sidebarFoot: { fontSize: 11.5, color: "#A39C8B", lineHeight: 1.5 },
+  sidebarFoot: { fontSize: 11.5, color: "#605E5C", lineHeight: 1.5 },
 
-  main: { flex: 1, display: "flex", flexDirection: "column", padding: "26px 30px", minWidth: 0 },
-  topbar: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  title: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 26, margin: 0, letterSpacing: "-0.01em" },
-  weekRange: { color: "#8A8473", fontSize: 14, fontFamily: "'JetBrains Mono', monospace" },
+  main: { 
+    flex: 1, 
+    display: "flex", 
+    flexDirection: "column", 
+    background: "#FFFFFF", // Griglia e corpo principale bianchi
+    minWidth: 0, 
+  },
+  topbar: { 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    background: "#F3F3F3", // Modificato come richiesto
+    padding: "16px 24px",
+    borderBottom: "1px solid #EDEBE9",
+  },
+  contentArea: {
+    flex: 1,
+    padding: "20px 24px",
+    display: "flex",
+    flexDirection: "column",
+    background: "#FFFFFF",
+  },
+  title: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 24, margin: 0, letterSpacing: "-0.01em", color: "#323130" },
+  weekRange: { color: "#605E5C", fontSize: 14, fontFamily: "'JetBrains Mono', monospace" },
   navBtn: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    border: "1px solid #DCD5C3",
-    background: "#FBF8F0",
+    borderRadius: 6,
+    border: "1px solid #EDEBE9",
+    background: "#FFFFFF",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    color: "#3D4439",
+    color: "#323130",
   },
   todayBtn: {
-    border: "1px solid #DCD5C3",
-    background: "#FBF8F0",
-    borderRadius: 8,
+    border: "1px solid #EDEBE9",
+    background: "#FFFFFF",
+    borderRadius: 6,
     padding: "6px 12px",
     fontSize: 13.5,
     fontWeight: 600,
     cursor: "pointer",
-    color: "#3D4439",
+    color: "#323130",
   },
 
   errorBanner: {
-    background: "#FBE9E4",
-    border: "1px solid #E3B6A6",
-    color: "#8A3D26",
+    background: "#FDE7E9",
+    border: "1px solid #FBC2C4",
+    color: "#A80000",
     padding: "10px 14px",
-    borderRadius: 10,
+    borderRadius: 6,
     fontSize: 13.5,
     marginBottom: 14,
   },
 
-  calendarWrap: { flex: 1, position: "relative", border: "1px solid #DCD5C3", borderRadius: 14, background: "#FFFEFB", overflow: "hidden" },
-  grid: { display: "flex", flexDirection: "column", height: "100%", position: "relative" },
-  gridHeadRow: { display: "flex", borderBottom: "1px solid #DCD5C3" },
+  calendarWrap: { flex: 1, position: "relative", border: "1px solid #EDEBE9", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" },
+  grid: { display: "flex", flexDirection: "column", height: "100%", position: "relative", background: "#FFFFFF" },
+  gridHeadRow: { display: "flex", borderBottom: "1px solid #EDEBE9", background: "#F3F3F3" },
   gutterCell: { width: 56, flexShrink: 0 },
-  dayHeadCell: { flex: 1, padding: "10px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, borderLeft: "1px solid #EFE9DA" },
-  dayHeadNum: { fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 600 },
-  dayHeadNumToday: { color: "#C1543C" },
-  dayHeadLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#A39C8B" },
+  dayHeadCell: { flex: 1, padding: "10px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, borderLeft: "1px solid #EDEBE9" },
+  dayHeadNum: { fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 600, color: "#323130" },
+  dayHeadNumToday: { color: "#0078D4" },
+  dayHeadLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#605E5C" },
 
-  gridBody: { display: "flex", flex: 1, overflowY: "auto" },
-  gutterCol: { width: 56, flexShrink: 0 },
-  hourLabel: { height: ROW_H, fontSize: 11, color: "#A39C8B", textAlign: "right", paddingRight: 8, fontFamily: "'JetBrains Mono', monospace", borderTop: "1px solid #F1ECDF" },
-  dayCol: { flex: 1, position: "relative", borderLeft: "1px solid #EFE9DA" },
-  hourCell: { height: ROW_H, borderTop: "1px solid #F1ECDF", cursor: "pointer" },
+  gridBody: { display: "flex", flex: 1, overflowY: "auto", background: "#FFFFFF" },
+  gutterCol: { width: 56, flexShrink: 0, background: "#F3F3F3" },
+  hourLabel: { height: ROW_H, fontSize: 11, color: "#605E5C", textAlign: "right", paddingRight: 8, fontFamily: "'JetBrains Mono', monospace", borderTop: "1px solid #EDEBE9" },
+  dayCol: { flex: 1, position: "relative", borderLeft: "1px solid #EDEBE9", background: "#FFFFFF" },
+  hourCell: { height: ROW_H, borderTop: "1px solid #EDEBE9", cursor: "pointer" },
 
   lessonBlock: {
     position: "absolute",
     left: 4,
     right: 4,
-    borderRadius: 8,
+    borderRadius: 4,
     padding: "6px 8px",
     display: "flex",
     flexDirection: "column",
@@ -960,8 +999,8 @@ const styles = {
     textAlign: "left",
     overflow: "hidden",
   },
-  lessonBlockTime: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, opacity: 0.85 },
-  lessonBlockNames: { fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  lessonBlockTime: { fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 600, opacity: 0.9 },
+  lessonBlockNames: { fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
 
   loadingOverlay: {
     position: "absolute",
@@ -971,69 +1010,69 @@ const styles = {
     padding: "6px 0",
     textAlign: "center",
     fontSize: 12,
-    color: "#A39C8B",
-    background: "rgba(255,254,251,0.85)",
+    color: "#605E5C",
+    background: "rgba(255,255,255,0.85)",
   },
 
-  overlay: { position: "fixed", inset: 0, background: "rgba(32,38,31,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 },
-  modal: { background: "#FFFEFB", borderRadius: 16, width: 440, maxWidth: "100%", maxHeight: "86vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 150, padding: 16 },
+  modal: { background: "#FFFFFF", borderRadius: 8, width: 440, maxWidth: "100%", maxHeight: "86vh", overflowY: "auto", boxShadow: "0 10px 30px rgba(0,0,0,0.15)" },
   modalHead: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 22px 0" },
-  modalTitle: { fontFamily: "'Fraunces', serif", fontSize: 21, fontWeight: 600, margin: 0 },
-  modalSubtitle: { fontSize: 13, color: "#8A8473", margin: "4px 0 0" },
-  closeBtn: { background: "transparent", border: "none", cursor: "pointer", color: "#8A8473", padding: 4 },
+  modalTitle: { fontFamily: "'Fraunces', serif", fontSize: 21, fontWeight: 600, margin: 0, color: "#323130" },
+  modalSubtitle: { fontSize: 13, color: "#605E5C", margin: "4px 0 0" },
+  closeBtn: { background: "transparent", border: "none", cursor: "pointer", color: "#605E5C", padding: 4 },
 
   form: { padding: "18px 22px 22px", display: "flex", flexDirection: "column", gap: 14 },
   formRow: { display: "flex", flexDirection: "column", gap: 6 },
   formRow2: { display: "flex", gap: 10 },
-  label: { fontSize: 12.5, fontWeight: 600, color: "#4A4438", textTransform: "uppercase", letterSpacing: "0.04em" },
+  label: { fontSize: 12.5, fontWeight: 600, color: "#323130", textTransform: "uppercase", letterSpacing: "0.04em" },
   input: {
-    border: "1px solid #DCD5C3",
-    borderRadius: 9,
+    border: "1px solid #EDEBE9",
+    borderRadius: 6,
     padding: "9px 11px",
     fontSize: 14,
     fontFamily: "inherit",
-    background: "#FBF8F0",
-    color: "#20261F",
+    background: "#F3F3F3",
+    color: "#323130",
     flex: 1,
     outline: "none",
   },
-  hintText: { fontSize: 13, color: "#8A8473", lineHeight: 1.5 },
+  hintText: { fontSize: 13, color: "#605E5C", lineHeight: 1.5 },
 
   studentPicker: { display: "flex", flexWrap: "wrap", gap: 7 },
   studentChip: {
-    border: "1px solid #DCD5C3",
-    background: "#FBF8F0",
+    border: "1px solid #EDEBE9",
+    background: "#F3F3F3",
     borderRadius: 999,
     padding: "6px 13px",
     fontSize: 13,
     cursor: "pointer",
-    color: "#3D4439",
+    color: "#323130",
   },
-  studentChipActive: { background: "#4F7942", borderColor: "#4F7942", color: "#F7F4EC" },
+  studentChipActive: { background: "#0078D4", borderColor: "#0078D4", color: "#ffffff" },
 
   modalActions: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 },
   primaryBtn: {
     display: "flex",
     alignItems: "center",
     gap: 6,
-    background: "#C1543C",
-    color: "#F7F4EC",
+    background: "#0078D4",
+    color: "#ffffff",
     border: "none",
-    borderRadius: 9,
+    borderRadius: 6,
     padding: "10px 16px",
     fontWeight: 600,
     fontSize: 14,
     cursor: "pointer",
   },
-  secondaryBtn: { background: "transparent", border: "1px solid #DCD5C3", borderRadius: 9, padding: "10px 16px", fontWeight: 600, fontSize: 14, cursor: "pointer", color: "#3D4439" },
+  secondaryBtn: { background: "transparent", border: "1px solid #EDEBE9", borderRadius: 6, padding: "10px 16px", fontWeight: 600, fontSize: 14, cursor: "pointer", color: "#323130" },
   dangerBtn: {
     display: "flex",
     alignItems: "center",
     gap: 6,
     background: "transparent",
-    border: "1px solid #D98A74",
-    color: "#A8442D",
-    borderRadius: 9,
+    border: "1px solid #FBC2C4",
+    color: "#A80000",
+    borderRadius: 6,
     padding: "10px 16px",
     fontWeight: 600,
     fontSize: 14,
@@ -1042,36 +1081,35 @@ const styles = {
 
   detailBody: { padding: "16px 22px 22px", display: "flex", flexDirection: "column", gap: 12 },
   detailRow: { display: "flex", alignItems: "center", gap: 10, fontSize: 14.5 },
-  seam: { height: 1, background: "repeating-linear-gradient(90deg,#DCD5C3 0 6px,transparent 6px 12px)", margin: "4px 0" },
+  seam: { height: 1, background: "repeating-linear-gradient(90deg,#EDEBE9 0 6px,transparent 6px 12px)", margin: "4px 0" },
 
   studentList: { display: "flex", flexDirection: "column", gap: 8, maxHeight: 180, overflowY: "auto" },
   studentRow: { display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 },
-  studentRowMeta: { marginLeft: "auto", color: "#A39C8B", fontSize: 12 },
 
   toast: {
     position: "fixed",
     bottom: 24,
     left: "50%",
     transform: "translateX(-50%)",
-    background: "#20261F",
-    color: "#F7F4EC",
+    background: "#323130",
+    color: "#ffffff",
     padding: "10px 18px",
-    borderRadius: 999,
+    borderRadius: 4,
     fontSize: 13.5,
     fontWeight: 500,
-    zIndex: 60,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+    zIndex: 160,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
   },
-  toastError: { background: "#8A3D26" },
+  toastError: { background: "#A80000" },
 
   /* ---- mobile layout ---- */
-  mainMobile: { padding: "14px 12px 80px 12px" },
+  mainMobile: { padding: 0 },
 
   mobileDateBar: {
-    fontSize: 13.5,
-    fontWeight: 500,
-    color: "#5A5348",
-    marginBottom: 10,
+    fontSize: 14,
+    fontWeight: 600,
+    color: "#605E5C",
+    padding: "10px 16px 0",
     textTransform: "capitalize",
     fontFamily: "'Fraunces', serif",
   },
@@ -1080,19 +1118,19 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: 5,
-    border: "1px solid #DCD5C3",
-    background: "#FBF8F0",
-    borderRadius: 8,
+    border: "1px solid #EDEBE9",
+    background: "#FFFFFF",
+    borderRadius: 6,
     padding: "6px 10px",
     fontSize: 12.5,
     fontWeight: 600,
     cursor: "pointer",
-    color: "#3D4439",
+    color: "#323130",
   },
   viewToggleBtnActive: {
-    background: "#20261F",
-    borderColor: "#20261F",
-    color: "#F7F4EC",
+    background: "#323130",
+    borderColor: "#323130",
+    color: "#ffffff",
   },
 
   /* ---- bottom nav ---- */
@@ -1101,9 +1139,9 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: 68,
-    background: "#FFFEFB",
-    borderTop: "1px solid #DCD5C3",
+    height: 60,
+    background: "#F3F3F3",
+    borderTop: "1px solid #EDEBE9",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-around",
@@ -1118,31 +1156,30 @@ const styles = {
     background: "transparent",
     border: "none",
     cursor: "pointer",
-    color: "#5A5348",
-    padding: "8px 20px",
+    color: "#605E5C",
+    padding: "4px 20px",
   },
   bottomNavLabel: { fontSize: 10.5, fontWeight: 600, letterSpacing: "0.02em" },
   bottomNavNewBtn: {
     position: "relative",
-    width: 52,
-    height: 52,
+    width: 44,
+    height: 44,
     borderRadius: 999,
-    background: "#C1543C",
-    color: "#F7F4EC",
+    background: "#0078D4",
+    color: "#ffffff",
     border: "none",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(193,84,60,0.45)",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   bottomNavBadge: {
     position: "absolute",
     top: -2,
     right: -2,
     background: "#C99A3C",
-    color: "#20261F",
+    color: "#ffffff",
     borderRadius: 999,
     fontSize: 10,
     fontWeight: 700,
@@ -1154,21 +1191,19 @@ const styles = {
     padding: "0 3px",
   },
 
-  /* ---- modal mobile ---- */
   overlayMobile: { alignItems: "flex-end", padding: 0 },
   modalMobile: {
     width: "100%",
     maxWidth: "100%",
-    borderRadius: "16px 16px 0 0",
-    maxHeight: "88vh",
+    borderRadius: "12px 12px 0 0",
+    maxHeight: "85vh",
   },
 
-  /* ---- tabs ---- */
   tabBar: {
     display: "flex",
     margin: "14px 22px 0",
-    background: "#F1EDE2",
-    borderRadius: 10,
+    background: "#EDEBE9",
+    borderRadius: 6,
     padding: 3,
     gap: 3,
   },
@@ -1180,28 +1215,27 @@ const styles = {
     gap: 6,
     border: "none",
     background: "transparent",
-    borderRadius: 8,
+    borderRadius: 4,
     padding: "8px 0",
     fontSize: 13.5,
     fontWeight: 600,
     cursor: "pointer",
-    color: "#6B6357",
+    color: "#605E5C",
   },
   tabBtnActive: {
-    background: "#FFFEFB",
-    color: "#20261F",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+    background: "#FFFFFF",
+    color: "#323130",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
   },
 
-  /* ---- student card ---- */
   searchBox: {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    border: "1px solid #DCD5C3",
-    borderRadius: 9,
+    border: "1px solid #EDEBE9",
+    borderRadius: 6,
     padding: "8px 11px",
-    background: "#FBF8F0",
+    background: "#F3F3F3",
     marginTop: 14,
   },
   studentCard: {
@@ -1209,14 +1243,14 @@ const styles = {
     alignItems: "center",
     gap: 12,
     padding: "10px 0",
-    borderBottom: "1px solid #F1ECDF",
+    borderBottom: "1px solid #EDEBE9",
   },
   studentCardAvatar: {
     width: 36,
     height: 36,
     borderRadius: 999,
-    background: "#4F7942",
-    color: "#F7F4EC",
+    background: "#0078D4",
+    color: "#ffffff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1228,10 +1262,9 @@ const styles = {
 
 const globalCss = `
   * { box-sizing: border-box; }
-  button:focus-visible, input:focus-visible { outline: 2px solid #4F7942; outline-offset: 2px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid #0078D4; outline-offset: 2px; }
   button { font-family: inherit; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #DCD5C3; border-radius: 8px; }
-  /* Permette swipe verticale sul calendario senza bloccare lo scroll della pagina */
+  ::-webkit-scrollbar-thumb { background: #EDEBE9; border-radius: 4px; }
   .grid-body { touch-action: pan-y; }
 `;
