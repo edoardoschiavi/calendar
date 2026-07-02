@@ -15,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -97,7 +98,7 @@ public class LessonService implements ILessonService{
     public List<LessonDto> getLessonsInPeriod(Date start, Date end) {
         List<Lesson> lessons = lessonRepository.findByStartTimeBetween(start,end);
         if(lessons.isEmpty())
-            throw new EntityNotFoundException("No lessons in this timeline!");
+            return new ArrayList<>();
 
         return lessons.stream()
                 .map(this::convertLessonToDto)

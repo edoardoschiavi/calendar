@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, X, Check, Trash2, ChevronLeft, ChevronRight, Settings, Users, Clock, CircleDot, Menu } from "lucide-react";
+import { Plus, X, Check, Trash2, ChevronLeft, ChevronRight, Settings, Users, Clock, CircleDot, Menu, CalendarDays, Search } from "lucide-react";
 
 /* ============================================================
    CourtCalendar — booking board for a tennis instructor
@@ -88,15 +88,16 @@ export default function CourtCalendar() {
   const [showMenu, setShowMenu] = useState(false);
 
   const [cursor, setCursor] = useState(() => new Date());
+  const [mobileView, setMobileView] = useState("day"); // "day" | "week"
   const weekStart = useMemo(() => startOfWeek(cursor), [cursor]);
   const days = useMemo(() => {
-    if (isMobile) {
+    if (isMobile && mobileView === "day") {
       const d = new Date(cursor);
       d.setHours(0, 0, 0, 0);
       return [d];
     }
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  }, [cursor, isMobile, weekStart]);
+  }, [cursor, isMobile, mobileView, weekStart]);
 
   const [lessons, setLessons] = useState([]);
   const [students, setStudents] = useState([]);
@@ -208,16 +209,17 @@ export default function CourtCalendar() {
     setShowCreate(true);
   }
 
+  const isDayView = isMobile && mobileView === "day";
   const todayWeek = useMemo(
-    () => (isMobile ? isSameDay(cursor, new Date()) : isSameDay(weekStart, startOfWeek(new Date()))),
-    [cursor, isMobile, weekStart]
+    () => (isDayView ? isSameDay(cursor, new Date()) : isSameDay(weekStart, startOfWeek(new Date()))),
+    [cursor, isDayView, weekStart]
   );
 
   function goPrev() {
-    setCursor((c) => addDays(c, isMobile ? -1 : -7));
+    setCursor((c) => addDays(c, isDayView ? -1 : -7));
   }
   function goNext() {
-    setCursor((c) => addDays(c, isMobile ? 1 : 7));
+    setCursor((c) => addDays(c, isDayView ? 1 : 7));
   }
   function goToday() {
     setCursor(new Date());
@@ -225,35 +227,53 @@ export default function CourtCalendar() {
 
   return (
     <div style={styles.app}>
-      <Sidebar
-        onNew={() => {
-          setCreateSlot(null);
-          setShowCreate(true);
-        }}
-        onStudents={() => setShowStudents(true)}
-        onSettings={() => setShowSettings(true)}
-        lessonsCount={lessons.length}
-        draftCount={lessons.filter((l) => l.status === "DRAFT").length}
-      />
+      {/* Sidebar — visibile solo su desktop */}
+      {!isMobile && (
+        <Sidebar
+          onNew={() => { setCreateSlot(null); setShowCreate(true); }}
+          onStudents={() => setShowStudents(true)}
+          onSettings={() => setShowSettings(true)}
+          lessonsCount={lessons.length}
+          draftCount={lessons.filter((l) => l.status === "DRAFT").length}
+        />
+      )}
 
-      <main style={styles.main}>
+      <main style={{ ...styles.main, ...(isMobile ? styles.mainMobile : {}) }}>
+        {/* Topbar */}
         <header style={styles.topbar}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
-            <h1 style={styles.title}>{fmtMonthYear(weekStart)}</h1>
-            <span style={styles.weekRange}>
-              {isMobile 
-                ? days[0].toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })
-                : `${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short" })}`
-              }
-            </span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            {isMobile && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <CircleDot size={18} color="#C1543C" strokeWidth={2.5} />
+                <span style={{ ...styles.brandText, fontSize: 18 }}>Court</span>
+              </div>
+            )}
+            {!isMobile && (
+              <>
+                <h1 style={styles.title}>{fmtMonthYear(weekStart)}</h1>
+                <span style={styles.weekRange}>
+                  {`${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short" })}`}
+                </span>
+              </>
+            )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Bottone Indietro */}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {/* Toggle giorno/settimana su mobile */}
+            {isMobile && (
+              <button
+                style={{ ...styles.viewToggleBtn, ...(mobileView === "week" ? styles.viewToggleBtnActive : {}) }}
+                onClick={() => setMobileView(v => v === "day" ? "week" : "day")}
+                title={mobileView === "day" ? "Vista settimana" : "Vista giorno"}
+              >
+                <CalendarDays size={15} />
+                {mobileView === "day" ? "Sett." : "Giorno"}
+              </button>
+            )}
+
             <button style={styles.navBtn} onClick={goPrev} aria-label="Precedente">
               <ChevronLeft size={18} />
             </button>
-            
-            {/* Bottone Oggi */}
             <button
               style={{ ...styles.todayBtn, opacity: todayWeek ? 0.5 : 1 }}
               onClick={goToday}
@@ -261,20 +281,46 @@ export default function CourtCalendar() {
             >
               Oggi
             </button>
-            
-            {/* Bottone Avanti */}
             <button style={styles.navBtn} onClick={goNext} aria-label="Successivo">
               <ChevronRight size={18} />
             </button>
           </div>
         </header>
 
+        {/* Data corrente su mobile (sotto la topbar) */}
+        {isMobile && (
+          <div style={styles.mobileDateBar}>
+            {isDayView
+              ? days[0].toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })
+              : `${days[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}`
+            }
+          </div>
+        )}
+
         {error && <div style={styles.errorBanner}>{error}</div>}
 
         <div style={styles.calendarWrap}>
-          <WeekGrid days={days} lessons={lessons} loading={loading} onSlotClick={openSlot} onLessonClick={setActiveLesson} />
+          <WeekGrid
+            days={days}
+            lessons={lessons}
+            loading={loading}
+            onSlotClick={openSlot}
+            onLessonClick={setActiveLesson}
+            onSwipeLeft={goNext}
+            onSwipeRight={goPrev}
+          />
         </div>
       </main>
+
+      {/* Bottom nav su mobile */}
+      {isMobile && (
+        <BottomNav
+          onNew={() => { setCreateSlot(null); setShowCreate(true); }}
+          onStudents={() => setShowStudents(true)}
+          onSettings={() => setShowSettings(true)}
+          draftCount={lessons.filter((l) => l.status === "DRAFT").length}
+        />
+      )}
 
       {showCreate && (
         <CreateLessonModal
@@ -359,14 +405,53 @@ function Sidebar({ onNew, onStudents, onSettings, lessonsCount, draftCount }) {
   );
 }
 
+/* ---------------- bottom nav (mobile) ---------------- */
+function BottomNav({ onNew, onStudents, onSettings, draftCount }) {
+  return (
+    <nav style={styles.bottomNav}>
+      <button style={styles.bottomNavItem} onClick={onStudents}>
+        <Users size={22} />
+        <span style={styles.bottomNavLabel}>Allievi</span>
+      </button>
+
+      <button style={styles.bottomNavNewBtn} onClick={onNew} aria-label="Nuova lezione">
+        <Plus size={26} strokeWidth={2.5} />
+        {draftCount > 0 && <span style={styles.bottomNavBadge}>{draftCount}</span>}
+      </button>
+
+      <button style={styles.bottomNavItem} onClick={onSettings}>
+        <Settings size={22} />
+        <span style={styles.bottomNavLabel}>Impostazioni</span>
+      </button>
+    </nav>
+  );
+}
+
 /* ---------------- week grid ---------------- */
-function WeekGrid({ days, lessons, loading, onSlotClick, onLessonClick }) {
+function WeekGrid({ days, lessons, loading, onSlotClick, onLessonClick, onSwipeLeft, onSwipeRight }) {
   const today = new Date();
+  const touchRef = React.useRef(null);
 
   function lessonsForDay(day) {
     return lessons
       .filter((l) => isSameDay(l.startTime, day))
       .sort((a, b) => a.startTime - b.startTime);
+  }
+
+  function handleTouchStart(e) {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchRef.current) return;
+    const dx = e.changedTouches[0].clientX - touchRef.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchRef.current.y);
+    // Swipe orizzontale: almeno 50px, più orizzontale che verticale
+    if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
+      if (dx < 0) onSwipeLeft?.();
+      else onSwipeRight?.();
+    }
+    touchRef.current = null;
   }
 
   return (
@@ -383,7 +468,11 @@ function WeekGrid({ days, lessons, loading, onSlotClick, onLessonClick }) {
         ))}
       </div>
 
-      <div style={styles.gridBody}>
+      <div
+        style={styles.gridBody}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div style={styles.gutterCol}>
           {HOURS.map((h) => (
             <div key={h} style={styles.hourLabel}>
@@ -556,8 +645,19 @@ function LessonDetailModal({ lesson, onClose, onConfirm, onDelete }) {
 
 /* ---------------- students modal ---------------- */
 function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
+  const [tab, setTab] = useState("list"); // "list" | "add"
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", cellNumber: "", fitpCard: "" });
   const [submitting, setSubmitting] = useState(false);
+
+  const filtered = students.filter((s) => {
+    const q = search.toLowerCase();
+    return (
+      s.firstName?.toLowerCase().includes(q) ||
+      s.lastName?.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q)
+    );
+  });
 
   async function addStudent(e) {
     e.preventDefault();
@@ -572,6 +672,7 @@ function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
       pushToast("Allievo aggiunto");
       setForm({ firstName: "", lastName: "", email: "", cellNumber: "", fitpCard: "" });
       onRefresh();
+      setTab("list");
     } catch {
       pushToast("Aggiunta non riuscita", "error");
     } finally {
@@ -580,42 +681,100 @@ function StudentsModal({ apiBase, students, onRefresh, onClose, pushToast }) {
   }
 
   return (
-    <ModalShell onClose={onClose} title="Allievi" subtitle="Elenco e aggiunta rapida">
-      <div style={styles.detailBody}>
-        <div style={styles.studentList}>
-          {students.length === 0 && (
-            <p style={styles.hintText}>
-              Nessun allievo caricato (richiede <code>GET /users</code> sul backend).
-            </p>
-          )}
-          {students.map((s) => (
-            <div key={s.id} style={styles.studentRow}>
-              <span style={styles.dot("#4F7942")} />
-              <span>{s.firstName} {s.lastName}</span>
-              <span style={styles.studentRowMeta}>{s.email}</span>
-            </div>
-          ))}
+    <ModalShell onClose={onClose} title="Allievi" subtitle={`${students.length} allievi registrati`}>
+      {/* Tab bar */}
+      <div style={styles.tabBar}>
+        <button
+          style={{ ...styles.tabBtn, ...(tab === "list" ? styles.tabBtnActive : {}) }}
+          onClick={() => setTab("list")}
+        >
+          <Users size={15} /> Elenco
+        </button>
+        <button
+          style={{ ...styles.tabBtn, ...(tab === "add" ? styles.tabBtnActive : {}) }}
+          onClick={() => setTab("add")}
+        >
+          <Plus size={15} /> Nuovo allievo
+        </button>
+      </div>
+
+      {tab === "list" && (
+        <div style={{ padding: "0 22px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Search box */}
+          <div style={styles.searchBox}>
+            <Search size={15} color="#A39C8B" style={{ flexShrink: 0 }} />
+            <input
+              placeholder="Cerca per nome, cognome o email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ ...styles.input, background: "transparent", border: "none", padding: "0", flex: 1 }}
+            />
+          </div>
+
+          {/* Lista */}
+          <div style={{ ...styles.studentList, maxHeight: 340 }}>
+            {students.length === 0 && (
+              <p style={styles.hintText}>
+                Nessun allievo trovato. Aggiungine uno dalla tab "Nuovo allievo".
+              </p>
+            )}
+            {filtered.length === 0 && students.length > 0 && (
+              <p style={styles.hintText}>Nessun risultato per "{search}".</p>
+            )}
+            {filtered.map((s) => (
+              <div key={s.id} style={styles.studentCard}>
+                <div style={styles.studentCardAvatar}>
+                  {(s.firstName?.[0] || "?").toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{s.firstName} {s.lastName}</div>
+                  <div style={{ fontSize: 12, color: "#8A8473", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {s.email}{s.cellNumber ? ` · ${s.cellNumber}` : ""}
+                  </div>
+                  {s.fitpCard && (
+                    <div style={{ fontSize: 11, color: "#A39C8B", marginTop: 1 }}>FITP {s.fitpCard}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
 
-        <div style={styles.seam} />
-
+      {tab === "add" && (
         <form onSubmit={addStudent} style={styles.form}>
           <div style={styles.formRow2}>
-            <input placeholder="Nome" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} style={styles.input} required />
-            <input placeholder="Cognome" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} style={styles.input} required />
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={styles.label}>Nome</label>
+              <input placeholder="Mario" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} style={styles.input} required />
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={styles.label}>Cognome</label>
+              <input placeholder="Rossi" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} style={styles.input} required />
+            </div>
           </div>
-          <input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={styles.input} required />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={styles.label}>Email</label>
+            <input placeholder="mario@email.com" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={styles.input} required />
+          </div>
           <div style={styles.formRow2}>
-            <input placeholder="Cellulare" value={form.cellNumber} onChange={(e) => setForm({ ...form, cellNumber: e.target.value })} style={styles.input} />
-            <input placeholder="Tessera FITP" value={form.fitpCard} onChange={(e) => setForm({ ...form, fitpCard: e.target.value })} style={styles.input} />
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={styles.label}>Cellulare</label>
+              <input placeholder="+39 333 000000" value={form.cellNumber} onChange={(e) => setForm({ ...form, cellNumber: e.target.value })} style={styles.input} />
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={styles.label}>Tessera FITP</label>
+              <input placeholder="IT12345" value={form.fitpCard} onChange={(e) => setForm({ ...form, fitpCard: e.target.value })} style={styles.input} />
+            </div>
           </div>
           <div style={styles.modalActions}>
+            <button type="button" style={styles.secondaryBtn} onClick={() => setTab("list")}>Annulla</button>
             <button type="submit" style={styles.primaryBtn} disabled={submitting}>
               {submitting ? "Aggiunta…" : "Aggiungi allievo"}
             </button>
           </div>
         </form>
-      </div>
+      )}
     </ModalShell>
   );
 }
@@ -646,9 +805,13 @@ function SettingsModal({ apiBase, onSave, onClose }) {
 
 /* ---------------- shared modal shell ---------------- */
 function ModalShell({ title, subtitle, onClose, children }) {
+  const isMobile = useIsMobile();
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div style={{ ...styles.overlay, ...(isMobile ? styles.overlayMobile : {}) }} onClick={onClose}>
+      <div
+        style={{ ...styles.modal, ...(isMobile ? styles.modalMobile : {}) }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={styles.modalHead}>
           <div>
             <h2 style={styles.modalTitle}>{title}</h2>
@@ -900,6 +1063,167 @@ const styles = {
     boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
   },
   toastError: { background: "#8A3D26" },
+
+  /* ---- mobile layout ---- */
+  mainMobile: { padding: "14px 12px 80px 12px" },
+
+  mobileDateBar: {
+    fontSize: 13.5,
+    fontWeight: 500,
+    color: "#5A5348",
+    marginBottom: 10,
+    textTransform: "capitalize",
+    fontFamily: "'Fraunces', serif",
+  },
+
+  viewToggleBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    border: "1px solid #DCD5C3",
+    background: "#FBF8F0",
+    borderRadius: 8,
+    padding: "6px 10px",
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    color: "#3D4439",
+  },
+  viewToggleBtnActive: {
+    background: "#20261F",
+    borderColor: "#20261F",
+    color: "#F7F4EC",
+  },
+
+  /* ---- bottom nav ---- */
+  bottomNav: {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 68,
+    background: "#FFFEFB",
+    borderTop: "1px solid #DCD5C3",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-around",
+    zIndex: 40,
+    paddingBottom: "env(safe-area-inset-bottom)",
+  },
+  bottomNavItem: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 3,
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    color: "#5A5348",
+    padding: "8px 20px",
+  },
+  bottomNavLabel: { fontSize: 10.5, fontWeight: 600, letterSpacing: "0.02em" },
+  bottomNavNewBtn: {
+    position: "relative",
+    width: 52,
+    height: 52,
+    borderRadius: 999,
+    background: "#C1543C",
+    color: "#F7F4EC",
+    border: "none",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    boxShadow: "0 4px 12px rgba(193,84,60,0.45)",
+    marginBottom: 6,
+  },
+  bottomNavBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    background: "#C99A3C",
+    color: "#20261F",
+    borderRadius: 999,
+    fontSize: 10,
+    fontWeight: 700,
+    minWidth: 16,
+    height: 16,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 3px",
+  },
+
+  /* ---- modal mobile ---- */
+  overlayMobile: { alignItems: "flex-end", padding: 0 },
+  modalMobile: {
+    width: "100%",
+    maxWidth: "100%",
+    borderRadius: "16px 16px 0 0",
+    maxHeight: "88vh",
+  },
+
+  /* ---- tabs ---- */
+  tabBar: {
+    display: "flex",
+    margin: "14px 22px 0",
+    background: "#F1EDE2",
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  tabBtn: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    border: "none",
+    background: "transparent",
+    borderRadius: 8,
+    padding: "8px 0",
+    fontSize: 13.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    color: "#6B6357",
+  },
+  tabBtnActive: {
+    background: "#FFFEFB",
+    color: "#20261F",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+  },
+
+  /* ---- student card ---- */
+  searchBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    border: "1px solid #DCD5C3",
+    borderRadius: 9,
+    padding: "8px 11px",
+    background: "#FBF8F0",
+    marginTop: 14,
+  },
+  studentCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "10px 0",
+    borderBottom: "1px solid #F1ECDF",
+  },
+  studentCardAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    background: "#4F7942",
+    color: "#F7F4EC",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 700,
+    fontSize: 14,
+    flexShrink: 0,
+  },
 };
 
 const globalCss = `
@@ -908,7 +1232,6 @@ const globalCss = `
   button { font-family: inherit; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb { background: #DCD5C3; border-radius: 8px; }
-  @media (max-width: 760px) {
-    aside { display: none !important; }
-  }
+  /* Permette swipe verticale sul calendario senza bloccare lo scroll della pagina */
+  .grid-body { touch-action: pan-y; }
 `;
