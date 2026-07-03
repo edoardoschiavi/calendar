@@ -165,7 +165,7 @@ export default function CourtCalendar() {
     try {
       const res = await fetch(`${apiBase}/lessons/${lessonId}/delete`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      pushToast("Bozza eliminata");
+      pushToast("Lezione eliminata");
       setActiveLesson(null);
       fetchLessons();
     } catch {
@@ -654,7 +654,17 @@ function LessonDetailModal({ lesson, onClose, onConfirm, onDelete }) {
             </button>
           </div>
         ) : (
-          <p style={styles.hintText}>Questa lezione è confermata.</p>
+          <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}>
+            <p style={styles.hintText}>Questa lezione è confermata.</p>
+            <button style={styles.dangerBtn} onClick={onDelete}>
+              <Trash2 size={16} /> Elimina
+            </button>
+          </div>
         )}
       </div>
     </ModalShell>
