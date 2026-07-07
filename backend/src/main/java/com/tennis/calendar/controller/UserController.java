@@ -6,7 +6,6 @@ import com.tennis.calendar.repository.ApiResponse;
 import com.tennis.calendar.request.CreateUserRequest;
 import com.tennis.calendar.request.UpdateUserRequest;
 import com.tennis.calendar.service.user.IUserService;
-import com.tennis.calendar.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

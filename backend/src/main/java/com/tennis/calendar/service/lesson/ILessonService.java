@@ -2,7 +2,6 @@ package com.tennis.calendar.service.lesson;
 
 import com.tennis.calendar.dto.LessonDto;
 import com.tennis.calendar.model.Lesson;
-import com.tennis.calendar.model.User;
 import com.tennis.calendar.request.CreateLessonRequest;
 
 import java.util.Date;

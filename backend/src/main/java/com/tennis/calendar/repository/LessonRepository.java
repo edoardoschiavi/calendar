@@ -1,6 +1,4 @@
 package com.tennis.calendar.repository;
-
-import com.tennis.calendar.dto.LessonDto;
 import com.tennis.calendar.model.Lesson;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
